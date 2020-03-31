@@ -45,7 +45,7 @@ def split(M):
     '''
     Helpler function to divide the submatrices
     '''
-    n = len(M[0]) // 2
+    n = len(M) // 2
 
     A, B, C, D = [[[0 for i in range(n)] for i in range(n)] for i in range(4)]
     for i in range(n):
@@ -61,27 +61,22 @@ def add(A, B, sign = 1):
     '''
     add (or subtract) two matrices
     '''
-    # declare global variable to count the number of additions
-    global ops
-
-    n = len(A[0])
+    n = len(A)
     C = [[0 for i in range(n)] for j in range(n)]
 
     if sign:
         for i in range(n):
             for j in range(n):
                 C[i][j] = A[i][j] + B[i][j]
-                ops += 1
     else:
         for i in range(n):
             for j in range(n):
                 C[i][j] = A[i][j] - B[i][j]
-                ops += 1
 
     return C
 
 def merge(A, B, C, D):
-    n = len(A[0])
+    n = len(A)
     M = [[0 for i in range(2*n)] for j in range(2*n)]
     for i in range(n):
         for j in range(n):
@@ -97,7 +92,7 @@ def mat_mul(A, B):
     Conventional multiplication of two n by n matrices: A, B
     '''
     # initialize dimension of matrix and number of operations
-    n = len(A[0])
+    n = len(A)
     # initialize final matrix
     C = [[0 for i in range(n)] for j in range(n)]
     # implement contraction
@@ -107,17 +102,15 @@ def mat_mul(A, B):
                 C[i][j] += A[i][k]*B[k][j]
     return C
 
-def strassen(M1, M2, top_level = 0):
-    # for the highest level of recursion
-    if top_level:
-        global ops
-        ops = 0
-
-    n = len(M1[0])
+def strassen(M1, M2, n0 = 0):
+    n = len(M1)
     # base case
     if n == 1:
-        ops += 1
         return [[M1[0][0]*M2[0][0]]]
+
+    if n <= n0:
+      return mat_mul(M1, M2)
+
     # if n is odd pad and unpad later before recursion
     if n % 2:
         M1 = pad(M1)
@@ -127,13 +120,13 @@ def strassen(M1, M2, top_level = 0):
     A, B, C, D = split(M1)
     E, F, G, H = split(M2)
 
-    P1 = strassen(A, add(F, H, 0))
-    P2 = strassen(add(A, B), H)
-    P3 = strassen(add(C, D), E)
-    P4 = strassen(D, add(G, E, 0))
-    P5 = strassen(add(A, D), add(E, H))
-    P6 = strassen(add(B, D, 0), add(G, H))
-    P7 = strassen(add(A, C, 0), add(E, F))
+    P1 = strassen(A, add(F, H, 0), n0)
+    P2 = strassen(add(A, B), H, n0)
+    P3 = strassen(add(C, D), E, n0)
+    P4 = strassen(D, add(G, E, 0), n0)
+    P5 = strassen(add(A, D), add(E, H), n0)
+    P6 = strassen(add(B, D, 0), add(G, H), n0)
+    P7 = strassen(add(A, C, 0), add(E, F), n0)
 
     # calculate strass submatrices
     AEBG = add(add(add(P5, P4), P2, 0), P6)
@@ -151,11 +144,6 @@ def strassen(M1, M2, top_level = 0):
 
     return M
 
-def compare_methods(A, B):
-
-    pass
-
-
 if __name__ == "__main__":
     flag = sys.argv[1]
     dimension = int(sys.argv[2])
@@ -168,12 +156,13 @@ if __name__ == "__main__":
       row = i // dimension
       col = i - row * dimension
       A[row][col] = int(file.readline())
-    for i in range(dimension * 2):
+    for i in range(dimension ** 2):
       row = i // dimension
       col = i - row * dimension
       B[row][col] = int(file.readline())
 
     # Perform Strassen's algorithm on input matrices, print diagonal entries
-    C = strassen(A, B, 1)
+    n0 = 405
+    C = strassen(A, B, n0)
     for i in range(dimension):
       print(C[i][i])
